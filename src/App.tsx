@@ -17,24 +17,20 @@ import {
   Palette,
   Upload,
   Sparkles,
+  Wand2,
   Loader2,
   RefreshCw,
   Cpu,
   Cloud,
-  MessageSquare,
-  Zap,
-  Square,
-  Layout,
-  Moon,
-  Type
+  MessageSquare
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from './lib/utils';
 import logoImg from '../midia/LOGO_CIBORG.png';
 import hiloImg from '../midia/LOGO_hilo.png';
 import heroImg from '../midia/imageheader.png';
-import image0Img from '../midia/image.png';
-import image1Img from '../midia/image1.png';
+import aboutImg from '../midia/image1.png';
+import imageImg from '../midia/image.png';
 import image2Img from '../midia/image2.png';
 import image3Img from '../midia/image3.png';
 import gallery1Img from '../midia/1.png';
@@ -47,29 +43,70 @@ import gallery4Img from '../midia/4.png';
 // --- Components ---
 
 const AIVisualizer = () => {
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [selectedStyle, setSelectedStyle] = useState("Futurista");
+  const availablePhotos = [imageImg, aboutImg, image2Img];
+  const [photo, setPhoto] = useState<string>(availablePhotos[0]);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [creativityLevel, setCreativityLevel] = useState(50);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
-  const availablePhotos = [
-    { id: 'img0', url: image0Img, label: 'Foto 1' },
-    { id: 'img1', url: image1Img, label: 'Foto 2' },
-    { id: 'img2', url: image2Img, label: 'Foto 3' },
-  ];
+  React.useEffect(() => {
+    const checkLimit = () => {
+      const today = new Date().toDateString();
+      const storedData = localStorage.getItem('imagine_limit');
+      
+      if (storedData) {
+        const { date, count } = JSON.parse(storedData);
+        if (date === today) {
+          setGenerationsLeft(Math.max(0, 7 - count));
+        } else {
+          localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: 0 }));
+          setGenerationsLeft(7);
+        }
+      } else {
+        localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: 0 }));
+        setGenerationsLeft(7);
+      }
+    };
 
-  const styles = [
-    { name: 'Futurista', icon: <Cpu size={14} />, prompt: 'estilo futurista com luzes neon e fumaça' },
-    { name: 'Cyberpunk', icon: <Zap size={14} />, prompt: 'estilo cyberpunk, alta tecnologia, baixo nível de vida, cores neon vibrantes' },
-    { name: 'Minimalista', icon: <Square size={14} />, prompt: 'estilo minimalista, limpo, foco no DJ, cores sóbrias' },
-    { name: 'Brutalista', icon: <Layout size={14} />, prompt: 'estilo brutalista, tipografia pesada, concreto, visual cru e impactante' },
-    { name: 'Retro', icon: <Disc size={14} />, prompt: 'estilo retro 80s, synthwave, cores quentes, visual vintage' },
-    { name: 'Deep Dark', icon: <Moon size={14} />, prompt: 'estilo dark e profundo, sombras intensas, atmosfera misteriosa de techno underground' },
-  ];
+    checkLimit();
+  }, []);
+
+  const improvePrompt = async () => {
+    if (!customPrompt.trim()) {
+      setError("Digite algo no prompt para que eu possa melhorar.");
+      return;
+    }
+
+    setIsImprovingPrompt(true);
+    setError(null);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Você é um especialista em engenharia de prompt para geração de imagens de IA. 
+        O usuário forneceu o seguinte prompt inicial para um flyer de DJ: "${customPrompt}"
+        
+        Sua tarefa é expandir e melhorar este prompt para torná-lo mais descritivo, visual e eficaz para uma IA de geração de imagem. 
+        Foque em detalhes de iluminação (neon, volumétrica), atmosfera (fumaça, partículas), estilo (cyberpunk, futurista, minimalista) e composição.
+        Mantenha o prompt em português. 
+        IMPORTANTE: Retorne APENAS o prompt melhorado, sem explicações ou introduções.`,
+      });
+
+      if (response.text) {
+        setCustomPrompt(response.text.trim());
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Erro ao melhorar o prompt. Tente novamente.");
+    } finally {
+      setIsImprovingPrompt(false);
+    }
+  };
 
   const getBase64FromUrl = async (url: string): Promise<string> => {
     const response = await fetch(url);
@@ -91,6 +128,11 @@ const AIVisualizer = () => {
       return;
     }
 
+    if (generationsLeft <= 0) {
+      setError("Você atingiu o limite de 7 gerações por dia. Volte amanhã!");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
@@ -99,37 +141,50 @@ const AIVisualizer = () => {
       const model = "gemini-2.5-flash-image";
 
       const photoData = await getBase64FromUrl(photo);
-      const logoData = await getBase64FromUrl(logoImg);
-
-      const stylePrompt = styles.find(s => s.name === selectedStyle)?.prompt || styles[0].prompt;
+      
+      const creativityInstructions = creativityLevel < 30 
+        ? "Mantenha a composition extremamente fiel à foto original, alterando apenas sutilmente a iluminação para um ambiente de DJ."
+        : creativityLevel < 70
+        ? "Equilibre a fidelidade da foto com elementos criativos de iluminação, fumaça e atmosfera de festival."
+        : "Seja altamente criativo com o cenário, luzes e efeitos visuais, transformando o ambiente em algo épico e futurista, mas MANTENDO O ROSTO IDENTIFICÁVEL.";
 
       const basePrompt = `Crie um flyer de alta qualidade para um DJ de música eletrônica. 
-      Use a foto do DJ fornecida como elemento principal. 
-      Integre o logo fornecido de forma elegante e profissional no design. 
-      O resultado deve parecer um poster oficial de evento internacional.
-      
-      TEXTO PRINCIPAL NO FLYER: "${title || 'CIBORG'}"
-      SUBTÍTULO NO FLYER: "${subtitle || 'LIVE SET'}"
-      ESTILO VISUAL: ${stylePrompt}`;
+      PRESERVAÇÃO DE IDENTIDADE ABSOLUTA: Você DEVE manter as características faciais EXATAS, a estrutura óssea e a identidade da pessoa na foto fornecida. O rosto na imagem gerada deve ser uma correspondência idêntica e fotorrealista de 1:1 com a imagem de origem. NÃO altere, embeleze ou estilize o rosto; ele deve ser perfeitamente reconhecível como a mesma pessoa real.
+      NÍVEL DE CRIATIVIDADE: ${creativityInstructions}
+      NÃO inclua nenhum logo ou marca d'água na imagem, foque apenas na foto do DJ e na ambientação.
+      IMPORTANTE: NÃO adicione nenhum texto, palavras, letras ou números na imagem (como nomes de eventos, datas, locais ou 'DJ'), a menos que seja explicitamente solicitado pelo usuário no prompt customizado. Foque exclusivamente na arte visual, luzes, cores e na composição artística.`;
 
       const finalPrompt = customPrompt
-        ? `${basePrompt}. Detalhes adicionais: ${customPrompt}`
-        : basePrompt;
+        ? `${basePrompt} Instruções adicionais do usuário: ${customPrompt}. LEMBRE-SE: A fidelidade do rosto é a prioridade máxima.`
+        : `${basePrompt} O estilo deve ser futurista, com luzes neon, fumaça e uma atmosfera de festival de techno melódico. Mantenha o rosto idêntico.`;
+
+      const parts: any[] = [
+        { inlineData: { data: photoData, mimeType: "image/png" } },
+        { text: `A imagem fornecida é a foto do DJ.
+        
+        ${finalPrompt}` }
+      ];
 
       const response = await ai.models.generateContent({
         model,
         contents: {
-          parts: [
-            { inlineData: { data: photoData, mimeType: "image/png" } },
-            { inlineData: { data: logoData, mimeType: "image/png" } },
-            { text: finalPrompt }
-          ]
+          parts: parts
         }
       });
 
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
           setGeneratedImage(`data:image/png;base64,${part.inlineData.data}`);
+          
+          // Update limit
+          const today = new Date().toDateString();
+          const storedData = localStorage.getItem('imagine_limit');
+          if (storedData) {
+            const { count } = JSON.parse(storedData);
+            const newCount = count + 1;
+            localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: newCount }));
+            setGenerationsLeft(Math.max(0, 7 - newCount));
+          }
           break;
         }
       }
@@ -144,29 +199,34 @@ const AIVisualizer = () => {
   return (
     <div className="space-y-8">
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="space-y-2">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
             <h3 className="text-2xl font-display font-bold">Configuração do Criativo</h3>
-            <p className="text-zinc-400 text-sm">Personalize os elementos do seu flyer e deixe a IA criar a arte perfeita.</p>
+            <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-full flex items-center gap-2">
+              <div className={cn("w-2 h-2 rounded-full", generationsLeft > 0 ? "bg-emerald-500" : "bg-red-500")} />
+              <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">
+                {generationsLeft} {generationsLeft === 1 ? 'restante' : 'restantes'} hoje
+              </span>
+            </div>
           </div>
+          <p className="text-zinc-400 text-sm">Escolha uma das fotos e digite o que você imagina para o seu flyer.</p>
 
-          {/* Foto Selection */}
-          <div className="space-y-3">
-            <label className="text-xs uppercase tracking-widest text-zinc-500">1. Escolha a Foto Base</label>
+          <div className="space-y-4">
+            <label className="text-xs uppercase tracking-widest text-zinc-500">Selecione sua Foto</label>
             <div className="grid grid-cols-3 gap-4">
-              {availablePhotos.map((item) => (
+              {availablePhotos.map((imgUrl, idx) => (
                 <div
-                  key={item.id}
-                  onClick={() => setPhoto(item.url)}
+                  key={idx}
+                  onClick={() => setPhoto(imgUrl)}
                   className={cn(
-                    "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group",
-                    photo === item.url ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "border-white/10 hover:border-white/30"
+                    "aspect-square rounded-2xl border-2 cursor-pointer transition-all overflow-hidden relative group",
+                    photo === imgUrl ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "border-white/10 hover:border-white/30"
                   )}
                 >
-                  <img src={item.url} className="w-full h-full object-cover" alt={item.label} referrerPolicy="no-referrer" />
-                  {photo === item.url && (
+                  <img src={imgUrl} className="w-full h-full object-cover" alt={`Option ${idx + 1}`} referrerPolicy="no-referrer" />
+                  {photo === imgUrl && (
                     <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                      <div className="bg-emerald-500 text-black p-1 rounded-full">
+                      <div className="bg-emerald-500 text-black rounded-full p-1">
                         <Sparkles size={12} />
                       </div>
                     </div>
@@ -176,76 +236,57 @@ const AIVisualizer = () => {
             </div>
           </div>
 
-          {/* Text Inputs */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                <Type size={12} /> 2. Texto Principal
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: CIBORG"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-medium"
-              />
+          <div className="space-y-4 glass-dark p-4 rounded-2xl border border-white/10">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs uppercase tracking-widest text-zinc-500">Nível de Criatividade</label>
+              <span className="text-emerald-500 font-mono text-sm font-bold">{creativityLevel}%</span>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                <MessageSquare size={12} /> 3. Subtítulo
-              </label>
-              <input
-                type="text"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="Ex: LIVE SET"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-medium"
-              />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={creativityLevel}
+              onChange={(e) => setCreativityLevel(parseInt(e.target.value))}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+            <div className="flex justify-between text-[10px] uppercase tracking-tighter text-zinc-600 font-bold mt-1">
+              <span>Fiel à Imagem</span>
+              <span>Equilibrado</span>
+              <span>Criativo</span>
             </div>
           </div>
 
-          {/* Style Selection */}
-          <div className="space-y-3">
-            <label className="text-xs uppercase tracking-widest text-zinc-500">4. Estilo Visual</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {styles.map((style) => (
-                <button
-                  key={style.name}
-                  onClick={() => setSelectedStyle(style.name)}
-                  className={cn(
-                    "px-3 py-3 rounded-xl text-[10px] uppercase tracking-widest font-bold border transition-all flex flex-col items-center gap-2",
-                    selectedStyle === style.name
-                      ? "bg-emerald-500 border-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-                      : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/30"
-                  )}
-                >
-                  {style.icon}
-                  {style.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Prompt */}
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-zinc-500">5. Detalhes Extras (Opcional)</label>
+            <label className="text-xs uppercase tracking-widest text-zinc-500">Estilo / Prompt Customizado (Opcional)</label>
             <textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder="Ex: Adicionar raios laser verdes, atmosfera de chuva..."
+              placeholder="Ex: Estilo cyberpunk, cores roxas e laranjas, ambiente de floresta mágica..."
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors resize-none text-sm"
-              rows={2}
+              rows={3}
             />
           </div>
 
-          <button
-            onClick={generateVisual}
-            disabled={isGenerating || !photo}
-            className="w-full bg-emerald-500 text-black py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles size={18} />}
-            {isGenerating ? "Gerando..." : "Imaginar"}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={improvePrompt}
+              disabled={isGenerating || isImprovingPrompt || !customPrompt.trim()}
+              className="flex-1 bg-white/5 border border-white/10 text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Melhorar Prompt com IA"
+            >
+              {isImprovingPrompt ? <Loader2 className="animate-spin" size={18} /> : <Wand2 size={18} />}
+              {isImprovingPrompt ? "Melhorando..." : "Melhorar"}
+            </button>
+
+            <button
+              onClick={generateVisual}
+              disabled={isGenerating || isImprovingPrompt || !photo || generationsLeft <= 0}
+              className="flex-[2] bg-emerald-500 text-black py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+              {isGenerating ? "Gerando..." : "Imaginar"}
+            </button>
+          </div>
 
           {error && <p className="text-red-400 text-xs text-center">{error}</p>}
         </div>
@@ -567,7 +608,7 @@ export default function App() {
             <a href="#músicas" className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2">
               <Play size={18} fill="currentColor" /> Ouvir Agora
             </a>
-            <a href="#imagine" className="glass px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-white/10 transition-all">
+            <a href="#imagine" onClick={(e) => { e.preventDefault(); scrollToSection('imagine'); }} className="glass px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-white/10 transition-all">
               Imagine
             </a>
           </motion.div>
@@ -603,7 +644,7 @@ export default function App() {
           >
             <div className="aspect-[4/5] rounded-3xl overflow-hidden glass p-2">
               <img
-                src={image1Img}
+                src={aboutImg}
                 alt="DJ Profile"
                 className="w-full h-full object-cover rounded-2xl grayscale-0 hover:grayscale transition-all duration-700"
                 referrerPolicy="no-referrer"
