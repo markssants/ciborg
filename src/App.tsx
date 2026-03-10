@@ -60,7 +60,7 @@ const AIVisualizer = () => {
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
   const getApiKey = () => {
-    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBLjxWt392igJQJpgDh0ZIdt2VF9vzQDzc";
+    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyCxG5fntPa9kujboSyjQjAAYZ1emI1iGqw";
   };
 
   React.useEffect(() => {
@@ -113,7 +113,11 @@ const AIVisualizer = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setError(`Erro ao melhorar o prompt: ${err.message || "Erro desconhecido"}`);
+      let msg = err.message || "Erro desconhecido";
+      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
+        msg = "Limite de uso atingido. A cota gratuita desta chave de API acabou por agora. Tente novamente em alguns minutos ou use uma nova chave.";
+      }
+      setError(`Erro ao melhorar o prompt: ${msg}`);
     } finally {
       setIsImprovingPrompt(false);
     }
@@ -202,7 +206,11 @@ const AIVisualizer = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setError(`Erro ao gerar imagem: ${err.message || "Erro de conexão ou API"}`);
+      let msg = err.message || "Erro de conexão ou API";
+      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
+        msg = "Limite de gerações atingido! A cota gratuita da API do Gemini foi esgotada para esta chave. Tente novamente mais tarde ou configure uma nova chave de API.";
+      }
+      setError(`Erro ao gerar imagem: ${msg}`);
     } finally {
       setIsGenerating(false);
     }
@@ -1108,7 +1116,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.1</a> 🎨
+          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.2</a> 🎨
         </p>
       </footer>
     </div >
