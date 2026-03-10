@@ -42,6 +42,8 @@ import gallery6Img from '../midia/6.jpg';
 import gallery7Img from '../midia/7.jpg';
 import gallery8Img from '../midia/8.jpg';
 
+
+
 // --- Components ---
 
 // --- Components ---
@@ -56,6 +58,10 @@ const AIVisualizer = () => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
+
+  const getApiKey = () => {
+    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+  };
 
   React.useEffect(() => {
     const checkLimit = () => {
@@ -85,11 +91,17 @@ const AIVisualizer = () => {
       return;
     }
 
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setError("Chave da API do Gemini não configurada. Por favor, configure GEMINI_API_KEY nas variáveis de ambiente.");
+      return;
+    }
+
     setIsImprovingPrompt(true);
     setError(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Você é um especialista em engenharia de prompt para geração de imagens de IA. 
@@ -137,11 +149,17 @@ const AIVisualizer = () => {
       return;
     }
 
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setError("Chave da API do Gemini não configurada. Por favor, configure GEMINI_API_KEY nas variáveis de ambiente.");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      const ai = new GoogleGenAI({ apiKey });
       const model = "gemini-2.5-flash-image";
 
       const photoData = await getBase64FromUrl(photo);
