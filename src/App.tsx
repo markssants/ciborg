@@ -37,6 +37,10 @@ import gallery1Img from '../midia/1.png';
 import gallery2Img from '../midia/2.png';
 import gallery3Img from '../midia/3.png';
 import gallery4Img from '../midia/4.png';
+import gallery5Img from '../midia/5.jpg';
+import gallery6Img from '../midia/6.jpg';
+import gallery7Img from '../midia/7.jpg';
+import gallery8Img from '../midia/8.jpg';
 
 // --- Components ---
 
@@ -859,10 +863,10 @@ export default function App() {
             gallery2Img,
             gallery3Img,
             gallery4Img,
-            'https://instagram.fplu24-1.fna.fbcdn.net/v/t51.75761-15/496171478_17934078021014550_6346616289832650532_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=105&ig_cache_key=MzYyNjc3ODI3MTM1NTQ4Nzc2NA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjE0NDB4MTgwMC5zZHIuQzMifQ%3D%3D&_nc_ohc=-nnLywP4eHAQ7kNvwFwZ2rR&_nc_oc=AdkoPIjoohE0IePe4Q-MOMB7aTGOb7upDIBkiHN2FQvLk6LVxG28VR1d0YlqvI9f-esJZ6HBgT13jLj5Yfx51el-&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=instagram.fplu24-1.fna&_nc_gid=-4jIbxS4mNLE4O_MrhCneQ&_nc_ss=8&oh=00_Afwc6XbFEX2dwb4g3Gstu4hGeHmfAgcoS2A2EGdmaf-8Mg&oe=69AB3977',
-            'https://instagram.fplu24-1.fna.fbcdn.net/v/t51.82787-15/630058211_17964088911014550_6354547097651028221_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=102&ig_cache_key=MzgyNjg4MTU1ODA0OTgyNTM1MQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjE0NDB4MTkyMC5zZHIuQzMifQ%3D%3D&_nc_ohc=88ikXLM6CSsQ7kNvwEWknnw&_nc_oc=AdmS0EseQPaxT4FdtoPADavF6KBE4hkktafUafoVOUPuBk4QdaVyIe5tCSA8NmmXg5G1sqLLtBEoyBDe30YuvWhL&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=instagram.fplu24-1.fna&_nc_gid=xrce_LAnTO6cb2ekpDZaEQ&_nc_ss=8&oh=00_Afx1gCHNJA9HHRFY_y38lY8PR9z_gXkQngY1vKvUm9parQ&oe=69AB4A94',
-            'https://instagram.fplu24-1.fna.fbcdn.net/v/t51.82787-15/567155030_17952320685014550_5633494804816752280_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=103&ig_cache_key=Mzc0NDcyODcyMDA5NjQyOTU5Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjE0NDB4MTI1OS5zZHIuQzMifQ%3D%3D&_nc_ohc=XSZzUDH708YQ7kNvwGQpTYc&_nc_oc=Adk3Te1XWST3CtutHGt9LKuxDStkQCcCOiLmeDfd_v_t_UPfxK3OEeX53lYy210_7s0dWsk8fqYY5qjNof-6SdrV&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=instagram.fplu24-1.fna&_nc_gid=NNBqEIYlaKePErV1eLr_ag&_nc_ss=8&oh=00_AfyC_IxOlIrXGdK6cZ83JZ2roSXyCUxiQaZ74NkAqBunsQ&oe=69AB40EC',
-            'https://instagram.fplu24-1.fna.fbcdn.net/v/t51.82787-15/541600029_17947216800014550_4505661918781697228_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=104&ig_cache_key=MzcxMjI5NjU1ODg4MTkyNzI5Mg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6InhwaWRzLjEzNjh4OTE0LnNkci5DMyJ9&_nc_ohc=Xb9t8iuOZNQQ7kNvwEbVy94&_nc_oc=Adk6300RfE3qzwPoicxMin1wAzkEaSBQTKq5UhkT5u6qkDRLJWAsOjY4sj3KEaWOHnO4viFJugaWkC3YH6q8zFOs&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=instagram.fplu24-1.fna&_nc_gid=pJnS57slnwP1Oh28EeSceg&_nc_ss=8&oh=00_AfxY5v3AxmwUIsqnwGqZjOUTvCWnVdP7TD24V-HwNU176A&oe=69AB4C5A',
+            gallery5Img,
+            gallery6Img,
+            gallery7Img,
+            gallery8Img,
           ].map((img, idx) => (
             <motion.div
               key={idx}
