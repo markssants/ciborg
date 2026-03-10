@@ -60,7 +60,7 @@ const AIVisualizer = () => {
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
   const getApiKey = () => {
-    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBLjxWt392igJQJpgDh0ZIdt2VF9vzQDzc";
   };
 
   React.useEffect(() => {
@@ -92,11 +92,6 @@ const AIVisualizer = () => {
     }
 
     const apiKey = getApiKey();
-    if (!apiKey) {
-      setError("Chave da API do Gemini não configurada. Por favor, configure GEMINI_API_KEY nas variáveis de ambiente.");
-      return;
-    }
-
     setIsImprovingPrompt(true);
     setError(null);
 
@@ -116,9 +111,9 @@ const AIVisualizer = () => {
       if (response.text) {
         setCustomPrompt(response.text.trim());
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Erro ao melhorar o prompt. Tente novamente.");
+      setError(`Erro ao melhorar o prompt: ${err.message || "Erro desconhecido"}`);
     } finally {
       setIsImprovingPrompt(false);
     }
@@ -150,11 +145,6 @@ const AIVisualizer = () => {
     }
 
     const apiKey = getApiKey();
-    if (!apiKey) {
-      setError("Chave da API do Gemini não configurada. Por favor, configure GEMINI_API_KEY nas variáveis de ambiente.");
-      return;
-    }
-
     setIsGenerating(true);
     setError(null);
 
@@ -210,9 +200,9 @@ const AIVisualizer = () => {
           break;
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Ocorreu um erro ao gerar a imagem. Verifique sua conexão e tente novamente.");
+      setError(`Erro ao gerar imagem: ${err.message || "Erro de conexão ou API"}`);
     } finally {
       setIsGenerating(false);
     }
@@ -1118,7 +1108,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span></a> 🎨
+          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.1</a> 🎨
         </p>
       </footer>
     </div >
