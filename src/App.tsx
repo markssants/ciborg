@@ -60,7 +60,11 @@ const AIVisualizer = () => {
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
   const getApiKey = () => {
-    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+    return process.env.GEMINI_API_KEY || 
+           process.env.ciborg14 || 
+           import.meta.env.VITE_GEMINI_API_KEY || 
+           import.meta.env.VITE_CIBORG14 || 
+           "";
   };
 
   React.useEffect(() => {
@@ -1132,7 +1136,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.4</a> 🎨
+          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.5</a> 🎨
         </p>
       </footer>
     </div >

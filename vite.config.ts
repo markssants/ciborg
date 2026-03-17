@@ -8,7 +8,21 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(
+        process.env.GEMINI_API_KEY || 
+        process.env.ciborg14 || 
+        env.GEMINI_API_KEY || 
+        env.ciborg14 || 
+        env.VITE_GEMINI_API_KEY || 
+        env.VITE_CIBORG14 || 
+        ""
+      ),
+      'process.env.ciborg14': JSON.stringify(
+        process.env.ciborg14 || 
+        env.ciborg14 || 
+        env.VITE_CIBORG14 || 
+        ""
+      ),
     },
     resolve: {
       alias: {
