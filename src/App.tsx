@@ -60,7 +60,7 @@ const AIVisualizer = () => {
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
   const getApiKey = () => {
-    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyCxG5fntPa9kujboSyjQjAAYZ1emI1iGqw";
+    return process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
   };
 
   React.useEffect(() => {
@@ -92,6 +92,10 @@ const AIVisualizer = () => {
     }
 
     const apiKey = getApiKey();
+    if (!apiKey) {
+      setError("Chave da API não encontrada. Por favor, configure a variável GEMINI_API_KEY no painel de Secrets (AI Studio) ou Environment Variables (Vercel).");
+      return;
+    }
     setIsImprovingPrompt(true);
     setError(null);
 
@@ -116,6 +120,10 @@ const AIVisualizer = () => {
       let msg = err.message || "Erro desconhecido";
       if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
         msg = "Limite de uso atingido. A cota gratuita desta chave de API acabou por agora. Tente novamente em alguns minutos ou use uma nova chave.";
+      } else if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) {
+        msg = "A chave da API foi bloqueada por segurança (vazamento detectado) ou não tem permissão. Por favor, configure uma nova chave GEMINI_API_KEY nas variáveis de ambiente.";
+      } else if (msg.includes("400") || msg.includes("INVALID_ARGUMENT") || msg.includes("expired")) {
+        msg = "A chave da API expirou ou é inválida. Por favor, gere uma nova chave no Google AI Studio e atualize suas configurações.";
       }
       setError(`Erro ao melhorar o prompt: ${msg}`);
     } finally {
@@ -149,6 +157,10 @@ const AIVisualizer = () => {
     }
 
     const apiKey = getApiKey();
+    if (!apiKey) {
+      setError("Chave da API não encontrada. Por favor, configure a variável GEMINI_API_KEY no painel de Secrets (AI Studio) ou Environment Variables (Vercel).");
+      return;
+    }
     setIsGenerating(true);
     setError(null);
 
@@ -209,6 +221,10 @@ const AIVisualizer = () => {
       let msg = err.message || "Erro de conexão ou API";
       if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
         msg = "Limite de gerações atingido! A cota gratuita da API do Gemini foi esgotada para esta chave. Tente novamente mais tarde ou configure uma nova chave de API.";
+      } else if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) {
+        msg = "A chave da API foi bloqueada por segurança (vazamento detectado) ou não tem permissão. Por favor, configure uma nova chave GEMINI_API_KEY nas variáveis de ambiente.";
+      } else if (msg.includes("400") || msg.includes("INVALID_ARGUMENT") || msg.includes("expired")) {
+        msg = "A chave da API expirou ou é inválida. Por favor, gere uma nova chave no Google AI Studio e atualize suas configurações.";
       }
       setError(`Erro ao gerar imagem: ${msg}`);
     } finally {
@@ -1116,7 +1132,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.2</a> 🎨
+          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.4</a> 🎨
         </p>
       </footer>
     </div >
