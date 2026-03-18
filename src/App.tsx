@@ -22,7 +22,9 @@ import {
   RefreshCw,
   Cpu,
   Cloud,
-  MessageSquare
+  MessageSquare,
+  Menu,
+  X
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from './lib/utils';
@@ -188,7 +190,7 @@ const AIVisualizer = () => {
 
       const finalPrompt = customPrompt
         ? `${basePrompt} Instruções adicionais do usuário: ${customPrompt}. LEMBRE-SE: A fidelidade do rosto é a prioridade máxima.`
-        : `${basePrompt} O estilo deve ser futurista, com luzes neon, fumaça e uma atmosfera de festival de techno melódico. Mantenha o rosto idêntico.`;
+        : `${basePrompt} O estilo deve ser futurista, com luzes neon, fumaça e uma atmosfera de festival de música eletrônica épico. Mantenha o rosto idêntico.`;
 
       const parts: any[] = [
         { inlineData: { data: photoData, mimeType: "image/png" } },
@@ -307,23 +309,23 @@ const AIVisualizer = () => {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-2 sm:gap-4">
             <button
               onClick={improvePrompt}
               disabled={isGenerating || isImprovingPrompt || !customPrompt.trim()}
-              className="flex-1 bg-white/5 border border-white/10 text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-white/5 border border-white/10 text-white h-14 rounded-xl font-bold uppercase tracking-wider text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Melhorar Prompt com IA"
             >
-              {isImprovingPrompt ? <Loader2 className="animate-spin" size={18} /> : <Wand2 size={18} />}
+              {isImprovingPrompt ? <Loader2 className="animate-spin" size={14} /> : <Wand2 size={14} />}
               {isImprovingPrompt ? "Melhorando..." : "Melhorar"}
             </button>
 
             <button
               onClick={generateVisual}
               disabled={isGenerating || isImprovingPrompt || !photo || generationsLeft <= 0}
-              className="flex-[2] bg-emerald-500 text-black py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-[2] bg-emerald-500 text-black h-14 rounded-xl font-bold uppercase tracking-wider text-xs sm:text-sm hover:bg-emerald-400 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+              {isGenerating ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
               {isGenerating ? "Gerando..." : "Imaginar"}
             </button>
           </div>
@@ -331,49 +333,66 @@ const AIVisualizer = () => {
           {error && <p className="text-red-400 text-xs text-center">{error}</p>}
         </div>
 
-        <div className="relative aspect-[4/5] glass rounded-3xl overflow-hidden flex items-center justify-center">
-          <AnimatePresence mode="wait">
-            {isGenerating ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center space-y-4"
+        <div className="space-y-4">
+          <div className="relative aspect-[4/5] glass rounded-3xl overflow-hidden flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {isGenerating ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-center space-y-4"
+                >
+                  <div className="relative">
+                    <div className="w-20 h-20 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mx-auto" />
+                    <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-emerald-500 animate-pulse" />
+                  </div>
+                  <p className="text-zinc-400 font-display uppercase tracking-[0.2em] text-xs">Processando Visual...</p>
+                </motion.div>
+              ) : generatedImage ? (
+                <motion.div
+                  key="result"
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-full h-full relative group"
+                >
+                  <img src={generatedImage} className="w-full h-full object-cover" alt="Generated Flyer" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <a
+                      href={generatedImage}
+                      download="dj-liquid-flyer.png"
+                      className="bg-white text-black px-6 h-12 rounded-full font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2"
+                    >
+                      <Download size={14} /> Salvar Imagem
+                    </a>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="text-center p-8">
+                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ImageIcon className="text-zinc-600" size={32} />
+                  </div>
+                  <p className="text-zinc-500 text-sm">O flyer gerado aparecerá aqui.</p>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {generatedImage && !isGenerating && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <a
+                href={generatedImage}
+                download="dj-ciborg-flyer.png"
+                className="w-full bg-emerald-500 text-black h-14 rounded-xl font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
               >
-                <div className="relative">
-                  <div className="w-20 h-20 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mx-auto" />
-                  <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-emerald-500 animate-pulse" />
-                </div>
-                <p className="text-zinc-400 font-display uppercase tracking-[0.2em] text-xs">Processando Visual...</p>
-              </motion.div>
-            ) : generatedImage ? (
-              <motion.div
-                key="result"
-                initial={{ opacity: 0, scale: 1.1 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full h-full relative group"
-              >
-                <img src={generatedImage} className="w-full h-full object-cover" alt="Generated Flyer" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <a
-                    href={generatedImage}
-                    download="dj-liquid-flyer.png"
-                    className="bg-white text-black px-6 py-3 rounded-full font-bold uppercase tracking-widest text-xs flex items-center gap-2"
-                  >
-                    <Download size={14} /> Salvar Imagem
-                  </a>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="text-center p-8">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ImageIcon className="text-zinc-600" size={32} />
-                </div>
-                <p className="text-zinc-500 text-sm">O flyer gerado aparecerá aqui.</p>
-              </div>
-            )}
-          </AnimatePresence>
+                <Download size={18} /> Baixar Flyer Gerado
+              </a>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>
@@ -420,6 +439,7 @@ const GlassCard = ({ children, className }: GlassCardProps) => (
 export default function App() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   React.useEffect(() => {
     const sections = ['sobre', 'agenda', 'músicas', 'sets', 'galeria', 'imagine', 'identidade', 'presskit', 'contato'];
@@ -474,20 +494,20 @@ export default function App() {
 
       {/* Navigation */}
       <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-5xl">
-        <div className="glass-dark rounded-full px-8 py-3 flex items-center justify-between border-white/10">
+        <div className="glass-dark rounded-full px-4 md:px-8 py-3 flex items-center justify-between border-white/10 relative">
           <div className="flex-1 flex items-center justify-start">
-            <button onClick={() => scrollToSection('hero')} className="focus:outline-none cursor-pointer bg-transparent border-none p-0">
+            <button onClick={() => { setIsMenuOpen(false); scrollToSection('hero'); }} className="focus:outline-none cursor-pointer bg-transparent border-none p-0">
               <img src={logoImg} alt="Ciborg Logo" className="h-8 md:h-10 object-contain" />
             </button>
           </div>
+
+          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 text-sm font-medium text-zinc-400 relative">
             {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
               const id = item.toLowerCase();
-              // Presskit pill is active for both #identidade and #presskit
               const isActive = item === 'Presskit'
                 ? (activeSection === 'presskit' || activeSection === 'identidade')
                 : activeSection === id;
-              // Presskit scrolls to #identidade
               const targetId = item === 'Presskit' ? 'identidade' : id;
               return (
                 <a
@@ -509,10 +529,21 @@ export default function App() {
               );
             })}
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="flex md:hidden items-center">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-white p-2 focus:outline-none"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
           <div className="flex-1 flex items-center justify-end">
             <button
-              onClick={() => scrollToSection('contato')}
-              className="relative text-xs font-bold uppercase tracking-widest px-6 py-2.5 rounded-full transition-colors cursor-pointer"
+              onClick={() => { setIsMenuOpen(false); scrollToSection('contato'); }}
+              className="relative text-[10px] sm:text-xs font-bold uppercase tracking-widest px-4 sm:px-6 py-2.5 rounded-full transition-colors cursor-pointer"
               style={{ color: (activeSection === null || activeSection === 'contato') ? 'black' : 'white' }}
             >
               {(activeSection === null || activeSection === 'contato') && (
@@ -525,6 +556,37 @@ export default function App() {
               Contato
             </button>
           </div>
+
+          {/* Mobile Menu Overlay */}
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                className="absolute top-full left-0 right-0 mt-4 bg-zinc-950/95 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 md:hidden flex flex-col gap-4 shadow-2xl"
+              >
+                {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
+                  const id = item.toLowerCase();
+                  const targetId = item === 'Presskit' ? 'identidade' : id;
+                  return (
+                    <a
+                      key={item}
+                      href={`#${targetId}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsMenuOpen(false);
+                        scrollToSection(targetId);
+                      }}
+                      className="text-zinc-400 hover:text-emerald-500 uppercase tracking-widest font-bold text-sm transition-colors py-2 border-b border-white/5 last:border-0"
+                    >
+                      {item}
+                    </a>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </nav>
 
@@ -640,15 +702,15 @@ export default function App() {
             Produtor musical e DJ especializado. Músicas extremamente envolventes, com groove inovador, dando muita energia e emoção ao escutá-las.
           </motion.p>
           <motion.div
-            className="flex gap-4 justify-center"
+            className="flex flex-row gap-2 sm:gap-4 justify-center"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            <a href="#músicas" className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2">
-              <Play size={18} fill="currentColor" /> Ouvir Agora
+            <a href="#músicas" className="bg-white text-black px-4 sm:px-8 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm">
+              <Play size={14} fill="currentColor" /> Ouvir Agora
             </a>
-            <a href="#imagine" onClick={(e) => { e.preventDefault(); scrollToSection('imagine'); }} className="glass px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-white/10 transition-all">
+            <a href="#imagine" onClick={(e) => { e.preventDefault(); scrollToSection('imagine'); }} className="glass px-6 sm:px-8 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-white/10 transition-all flex items-center justify-center text-[10px] sm:text-xs md:text-sm">
               Imagine
             </a>
           </motion.div>
@@ -702,11 +764,7 @@ export default function App() {
             <p className="text-zinc-400 leading-relaxed">
               Sua jornada começou nos clubes underground de São Paulo, onde desenvolveu uma sensibilidade aguçada para a leitura de pista. Hoje, suas produções são reconhecidas pela complexidade rítmica e atmosferas envolventes que transportam o público para uma jornada sensorial completa.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-              <GlassCard className="p-4">
-                <div className="text-emerald-500 mb-2"><Disc size={24} /></div>
-                <div className="text-sm font-bold uppercase tracking-tighter">Techno</div>
-              </GlassCard>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
               <GlassCard className="p-4">
                 <div className="text-blue-500 mb-2"><Music size={24} /></div>
                 <div className="text-sm font-bold uppercase tracking-tighter">Prog Trance</div>
@@ -745,7 +803,7 @@ export default function App() {
                 </div>
               </div>
               {gig.status === 'Sold Out' ? (
-                <button disabled className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-zinc-800 text-zinc-500 cursor-not-allowed">
+                <button disabled className="px-6 h-10 rounded-full text-xs font-bold uppercase tracking-wider bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center justify-center">
                   Sold Out
                 </button>
               ) : (
@@ -753,7 +811,7 @@ export default function App() {
                   href={`https://wa.me/5519974230470?text=${encodeURIComponent(`Quero comprar ingresso da festa ${gig.event}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-white text-black hover:bg-emerald-500 transition-all"
+                  className="px-6 h-10 rounded-full text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-emerald-500 transition-all flex items-center justify-center"
                 >
                   {gig.status}
                 </a>
@@ -922,7 +980,7 @@ export default function App() {
 
       {/* Identidade Visual Section */}
       <Section id="identidade" title="Identidade Visual" className="bg-zinc-900/30">
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Logo & Agência — card 1 */}
           <GlassCard className="space-y-4">
             <div className="flex items-center gap-4 mb-2">
@@ -1001,7 +1059,7 @@ export default function App() {
                 href="https://drive.google.com/drive/folders/183J5Zom7Y2UeS4GCPvzrzxW0wxhRYPMb?usp=sharing"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-emerald-500 text-black px-10 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+                className="bg-emerald-500 text-black px-10 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
               >
                 Download Full Kit (ZIP)
               </a>
@@ -1009,9 +1067,9 @@ export default function App() {
                 href="https://drive.google.com/file/d/1XG1r6sEJKyiREwxlopIZyZ9QFGUsmAkM/view?usp=drive_link"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="glass px-10 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                className="glass px-10 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-white/10 transition-all flex items-center justify-center gap-2"
               >
-                Proposta de Contratação (PDF)
+                PROPOSTA DE CONTRATAÇÃO
               </a>
             </div>
           </GlassCard>
@@ -1136,7 +1194,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.5</a> 🎨
+          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.6</a> 🎨
         </p>
       </footer>
     </div >
