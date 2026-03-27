@@ -782,10 +782,11 @@ export default function App() {
       <Section id="agenda" title="Agenda" className="bg-zinc-900/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { date: '01 MAR', event: 'Farofa Trance', city: 'Club A, SP', status: 'Ingressos' },
-            { date: '01 MAR', event: 'Prog Revolution', city: 'Sítio Quero Quero, SP', status: 'Ingressos' },
-            { date: '01 MAR', event: 'Sociedélic', city: 'Synaptic Stage, SP', status: 'Ingressos' },
-            { date: '01 MAR', event: 'Insight Festival', city: 'Festival Grounds, SP', status: 'Ingressos' },
+            { date: '1/2 MAI', event: 'Sociedelic', city: 'São Paulo, SP', status: 'Ingressos' },
+            { date: '23 MAI', event: 'Isis Psy', city: 'São Paulo, SP', status: 'Ingressos' },
+            { date: '30/31 MAI', event: 'Sumatra', city: 'São Paulo, SP', status: 'Ingressos' },
+            { date: '7 JUL', event: 'Arraial Psicodelico', city: 'São Paulo, SP', status: 'Ingressos' },
+            { date: '5/6 SET', event: 'Farofa Trance', city: 'São Paulo, SP', status: 'Ingressos' },
           ].map((gig, idx) => (
             <motion.div
               key={idx}
@@ -1194,7 +1195,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          🚀 Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span> 1.6</a> 🎨
+          1.7 | Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span></a> 🎨
         </p>
       </footer>
     </div >
