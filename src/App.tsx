@@ -62,18 +62,18 @@ const AIVisualizer = () => {
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
   const getApiKey = () => {
-    return process.env.GEMINI_API_KEY || 
-           process.env.ciborg14 || 
-           import.meta.env.VITE_GEMINI_API_KEY || 
-           import.meta.env.VITE_CIBORG14 || 
-           "";
+    return process.env.GEMINI_API_KEY ||
+      process.env.ciborg14 ||
+      import.meta.env.VITE_GEMINI_API_KEY ||
+      import.meta.env.VITE_CIBORG14 ||
+      "";
   };
 
   React.useEffect(() => {
     const checkLimit = () => {
       const today = new Date().toDateString();
       const storedData = localStorage.getItem('imagine_limit');
-      
+
       if (storedData) {
         const { date, count } = JSON.parse(storedData);
         if (date === today) {
@@ -175,12 +175,12 @@ const AIVisualizer = () => {
       const model = "gemini-2.5-flash-image";
 
       const photoData = await getBase64FromUrl(photo);
-      
-      const creativityInstructions = creativityLevel < 30 
+
+      const creativityInstructions = creativityLevel < 30
         ? "Mantenha a composition extremamente fiel à foto original, alterando apenas sutilmente a iluminação para um ambiente de DJ."
         : creativityLevel < 70
-        ? "Equilibre a fidelidade da foto com elementos criativos de iluminação, fumaça e atmosfera de festival."
-        : "Seja altamente criativo com o cenário, luzes e efeitos visuais, transformando o ambiente em algo épico e futurista, mas MANTENDO O ROSTO IDENTIFICÁVEL.";
+          ? "Equilibre a fidelidade da foto com elementos criativos de iluminação, fumaça e atmosfera de festival."
+          : "Seja altamente criativo com o cenário, luzes e efeitos visuais, transformando o ambiente em algo épico e futurista, mas MANTENDO O ROSTO IDENTIFICÁVEL.";
 
       const basePrompt = `Crie um flyer de alta qualidade para um DJ de música eletrônica. 
       PRESERVAÇÃO DE IDENTIDADE ABSOLUTA: Você DEVE manter as características faciais EXATAS, a estrutura óssea e a identidade da pessoa na foto fornecida. O rosto na imagem gerada deve ser uma correspondência idêntica e fotorrealista de 1:1 com a imagem de origem. NÃO altere, embeleze ou estilize o rosto; ele deve ser perfeitamente reconhecível como a mesma pessoa real.
@@ -194,9 +194,11 @@ const AIVisualizer = () => {
 
       const parts: any[] = [
         { inlineData: { data: photoData, mimeType: "image/png" } },
-        { text: `A imagem fornecida é a foto do DJ.
+        {
+          text: `A imagem fornecida é a foto do DJ.
         
-        ${finalPrompt}` }
+        ${finalPrompt}`
+        }
       ];
 
       const response = await ai.models.generateContent({
@@ -209,7 +211,7 @@ const AIVisualizer = () => {
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
           setGeneratedImage(`data:image/png;base64,${part.inlineData.data}`);
-          
+
           // Update limit
           const today = new Date().toDateString();
           const storedData = localStorage.getItem('imagine_limit');
@@ -442,7 +444,7 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   React.useEffect(() => {
-    const sections = ['sobre', 'agenda', 'músicas', 'sets', 'galeria', 'imagine', 'identidade', 'presskit', 'contato'];
+    const sections = ['biografia', 'músicas', 'sets', 'galeria', 'imagine', 'identidade', 'presskit', 'contato'];
     const observers: IntersectionObserver[] = [];
     sections.forEach((id) => {
       const el = document.getElementById(id);
@@ -503,7 +505,7 @@ export default function App() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 text-sm font-medium text-zinc-400 relative">
-            {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
+            {['Biografia', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
               const id = item.toLowerCase();
               const isActive = item === 'Presskit'
                 ? (activeSection === 'presskit' || activeSection === 'identidade')
@@ -566,7 +568,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 className="absolute top-full left-0 right-0 mt-4 bg-zinc-950/95 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 md:hidden flex flex-col gap-4 shadow-2xl"
               >
-                {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
+                {['Biografia', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
                   const id = item.toLowerCase();
                   const targetId = item === 'Presskit' ? 'identidade' : id;
                   return (
@@ -735,8 +737,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* Sobre Section */}
-      <Section id="sobre" title="Sobre">
+      {/* Biografia Section */}
+      <Section id="biografia" title="Biografia">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -778,7 +780,7 @@ export default function App() {
         </div>
       </Section>
 
-      {/* Agenda Section */}
+      {/* Agenda Section is hidden
       <Section id="agenda" title="Agenda" className="bg-zinc-900/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
@@ -821,6 +823,7 @@ export default function App() {
           ))}
         </div>
       </Section>
+      */}
 
       {/* Musicas Section */}
       <Section id="músicas" title="Músicas">
@@ -1028,18 +1031,14 @@ export default function App() {
               <Music className="text-emerald-500 shrink-0" size={20} />
               <h3 className="text-xl font-bold text-emerald-400 uppercase tracking-widest">Release</h3>
             </div>
-            <p className="text-sm font-bold text-white uppercase tracking-wide">Mais um nome confirmado!</p>
             <p className="text-sm text-zinc-300 leading-relaxed">
-              Ele é presença constante, energia garantida e vibração lá no alto.{' '}
-              <span className="text-white font-semibold">CIBORG</span> é mais que um artista — é um parceiro de confiança,
-              que caminha com o nosso evento desde sempre, acreditando na proposta e fortalecendo cada edição com sua entrega e conexão única com a pista.
+              Com performances eletrizantes, presença marcante e uma identidade sonora que mistura potência e precisão, <span className="text-white font-semibold">CIBORG</span> transforma cada set em uma experiência marcante.
             </p>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              Com performances eletrizantes, presença marcante e uma identidade sonora que mistura potência e precisão,
-              CIBORG transforma sets em experiências hipnóticas, conduzindo o público por verdadeiras viagens emocionais e dançantes.
+              Sua musicalidade carrega uma energia envolvente, conduzindo o público por uma jornada totalmente dançante do começo ao fim. Entre graves pulsantes e atmosferas psicodélicas, cada apresentação entrega conexão, vibração e movimento constante na pista.
             </p>
             <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-emerald-500 pl-3">
-              E desta vez não será diferente. Ele está de volta para mais uma missão, com tudo o que você já espera — e muito mais.
+              Mais do que música, <span className="text-white font-semibold">CIBORG</span> cria experiências imersivas, onde cada batida desperta emoções e leva o público a uma verdadeira viagem sonora.
             </p>
           </GlassCard>
         </div>
@@ -1063,14 +1062,6 @@ export default function App() {
                 className="bg-emerald-500 text-black px-10 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
               >
                 Download Full Kit (ZIP)
-              </a>
-              <a
-                href="https://drive.google.com/file/d/1XG1r6sEJKyiREwxlopIZyZ9QFGUsmAkM/view?usp=drive_link"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="glass px-10 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-              >
-                PROPOSTA DE CONTRATAÇÃO
               </a>
             </div>
           </GlassCard>
