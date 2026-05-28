@@ -62,18 +62,18 @@ const AIVisualizer = () => {
   const [generationsLeft, setGenerationsLeft] = useState<number>(7);
 
   const getApiKey = () => {
-    return process.env.GEMINI_API_KEY ||
-      process.env.ciborg14 ||
-      import.meta.env.VITE_GEMINI_API_KEY ||
-      import.meta.env.VITE_CIBORG14 ||
-      "";
+    return process.env.GEMINI_API_KEY || 
+           process.env.ciborg14 || 
+           import.meta.env.VITE_GEMINI_API_KEY || 
+           import.meta.env.VITE_CIBORG14 || 
+           "";
   };
 
   React.useEffect(() => {
     const checkLimit = () => {
       const today = new Date().toDateString();
       const storedData = localStorage.getItem('imagine_limit');
-
+      
       if (storedData) {
         const { date, count } = JSON.parse(storedData);
         if (date === today) {
@@ -124,12 +124,22 @@ const AIVisualizer = () => {
     } catch (err: any) {
       console.error(err);
       let msg = err.message || "Erro desconhecido";
-      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
-        msg = "Limite de uso atingido. A cota gratuita desta chave de API acabou por agora. Tente novamente em alguns minutos ou use uma nova chave.";
+      try {
+        const firstBrace = msg.indexOf('{');
+        if (firstBrace !== -1) {
+          const parsed = JSON.parse(msg.substring(firstBrace));
+          if (parsed.error?.message) {
+            msg = parsed.error.message;
+          }
+        }
+      } catch (e) {}
+
+      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota") || msg.includes("Quota")) {
+        msg = "Limite de cota atingido (429). A cota gratuita para geração de imagens foi excedida. Verifique os detalhes de faturamento/plano de faturamento da sua chave de API no Google AI Studio, ou aguarde um momento antes de tentar novamente.";
       } else if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) {
-        msg = "A chave da API foi bloqueada por segurança (vazamento detectado) ou não tem permissão. Por favor, configure uma nova chave GEMINI_API_KEY nas variáveis de ambiente.";
+        msg = "A chave da API foi bloqueada por segurança ou não tem permissões adequadas. Configure uma nova chave GEMINI_API_KEY nas variáveis do projeto.";
       } else if (msg.includes("400") || msg.includes("INVALID_ARGUMENT") || msg.includes("expired")) {
-        msg = "A chave da API expirou ou é inválida. Por favor, gere uma nova chave no Google AI Studio e atualize suas configurações.";
+        msg = "A chave da API expirou ou os argumentos do modelo são inválidos. Gere uma nova chave no painel do Google AI Studio.";
       }
       setError(`Erro ao melhorar o prompt: ${msg}`);
     } finally {
@@ -138,17 +148,49 @@ const AIVisualizer = () => {
   };
 
   const getBase64FromUrl = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = (reader.result as string).split(',')[1];
-        resolve(base64String);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    try {
+      // Primeiro tenta conversão ultra confiável baseada em Canvas (não depende de rede/CORS local)
+      return await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              reject(new Error("Não foi possível carregar o canvas"));
+              return;
+            }
+            ctx.drawImage(img, 0, 0);
+            const dataUrl = canvas.toDataURL("image/png");
+            const base64String = dataUrl.split(',')[1];
+            resolve(base64String);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => {
+          reject(new Error("Erro ao carregar elemento de imagem"));
+        };
+        img.src = url;
+      });
+    } catch (e) {
+      console.warn("Conversão via Canvas falhou, usando fallback de fetch: ", e);
+      // Fallback para o método tradicional com fetch
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
   };
 
   const generateVisual = async () => {
@@ -175,12 +217,12 @@ const AIVisualizer = () => {
       const model = "gemini-2.5-flash-image";
 
       const photoData = await getBase64FromUrl(photo);
-
-      const creativityInstructions = creativityLevel < 30
+      
+      const creativityInstructions = creativityLevel < 30 
         ? "Mantenha a composition extremamente fiel à foto original, alterando apenas sutilmente a iluminação para um ambiente de DJ."
         : creativityLevel < 70
-          ? "Equilibre a fidelidade da foto com elementos criativos de iluminação, fumaça e atmosfera de festival."
-          : "Seja altamente criativo com o cenário, luzes e efeitos visuais, transformando o ambiente em algo épico e futurista, mas MANTENDO O ROSTO IDENTIFICÁVEL.";
+        ? "Equilibre a fidelidade da foto com elementos criativos de iluminação, fumaça e atmosfera de festival."
+        : "Seja altamente criativo com o cenário, luzes e efeitos visuais, transformando o ambiente em algo épico e futurista, mas MANTENDO O ROSTO IDENTIFICÁVEL.";
 
       const basePrompt = `Crie um flyer de alta qualidade para um DJ de música eletrônica. 
       PRESERVAÇÃO DE IDENTIDADE ABSOLUTA: Você DEVE manter as características faciais EXATAS, a estrutura óssea e a identidade da pessoa na foto fornecida. O rosto na imagem gerada deve ser uma correspondência idêntica e fotorrealista de 1:1 com a imagem de origem. NÃO altere, embeleze ou estilize o rosto; ele deve ser perfeitamente reconhecível como a mesma pessoa real.
@@ -194,24 +236,34 @@ const AIVisualizer = () => {
 
       const parts: any[] = [
         { inlineData: { data: photoData, mimeType: "image/png" } },
-        {
-          text: `A imagem fornecida é a foto do DJ.
+        { text: `A imagem fornecida é a foto do DJ.
         
-        ${finalPrompt}`
-        }
+        ${finalPrompt}` }
       ];
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: {
-          parts: parts
-        }
-      });
+      // Timeout de segurança de 40 segundos para evitar processamento infinito
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("A requisição ao Gemini demorou muito para responder (timeout).")), 40000)
+      );
+
+      // Race a requisição com o timeout
+      const response = await Promise.race([
+        ai.models.generateContent({
+          model,
+          contents: {
+            parts: parts
+          }
+        }),
+        timeoutPromise
+      ]);
+
+      let imageFound = false;
+      let textResponse = "";
 
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
           setGeneratedImage(`data:image/png;base64,${part.inlineData.data}`);
-
+          
           // Update limit
           const today = new Date().toDateString();
           const storedData = localStorage.getItem('imagine_limit');
@@ -221,18 +273,39 @@ const AIVisualizer = () => {
             localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: newCount }));
             setGenerationsLeft(Math.max(0, 7 - newCount));
           }
+          imageFound = true;
           break;
+        } else if (part.text) {
+          textResponse = part.text;
+        }
+      }
+
+      if (!imageFound) {
+        if (textResponse) {
+          throw new Error(`A API não conseguiu gerar uma nova imagem, mas retornou a seguinte mensagem: "${textResponse}"`);
+        } else {
+          throw new Error("A resposta da API do Gemini não conteve nenhuma imagem válida.");
         }
       }
     } catch (err: any) {
       console.error(err);
       let msg = err.message || "Erro de conexão ou API";
-      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
-        msg = "Limite de gerações atingido! A cota gratuita da API do Gemini foi esgotada para esta chave. Tente novamente mais tarde ou configure uma nova chave de API.";
+      try {
+        const firstBrace = msg.indexOf('{');
+        if (firstBrace !== -1) {
+          const parsed = JSON.parse(msg.substring(firstBrace));
+          if (parsed.error?.message) {
+            msg = parsed.error.message;
+          }
+        }
+      } catch (e) {}
+
+      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota") || msg.includes("Quota")) {
+        msg = "Limite de cota atingido (429). A cota para geração de imagens foi excedida. Verifique os detalhes de faturamento/plano de faturamento da sua chave de API e se há um cartão configurado no console do Google AI Studio, ou aguarde um momento antes de tentar novamente.";
       } else if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) {
-        msg = "A chave da API foi bloqueada por segurança (vazamento detectado) ou não tem permissão. Por favor, configure uma nova chave GEMINI_API_KEY nas variáveis de ambiente.";
+        msg = "A chave da API foi bloqueada por segurança ou não tem permissões adequadas. Por favor, configure uma nova chave GEMINI_API_KEY.";
       } else if (msg.includes("400") || msg.includes("INVALID_ARGUMENT") || msg.includes("expired")) {
-        msg = "A chave da API expirou ou é inválida. Por favor, gere uma nova chave no Google AI Studio e atualize suas configurações.";
+        msg = "A chave da API expirou ou os argumentos do modelo são inválidos. Gere uma nova chave no painel do Google AI Studio.";
       }
       setError(`Erro ao gerar imagem: ${msg}`);
     } finally {
@@ -442,9 +515,12 @@ export default function App() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const showAgenda = false;
 
   React.useEffect(() => {
-    const sections = ['biografia', 'músicas', 'sets', 'galeria', 'imagine', 'identidade', 'presskit', 'contato'];
+    const sections = ['sobre', 'agenda', 'músicas', 'sets', 'galeria', 'imagine', 'identidade', 'presskit', 'contato'].filter(
+      id => id !== 'agenda' || showAgenda
+    );
     const observers: IntersectionObserver[] = [];
     sections.forEach((id) => {
       const el = document.getElementById(id);
@@ -505,7 +581,7 @@ export default function App() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 text-sm font-medium text-zinc-400 relative">
-            {['Biografia', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
+            {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
               const id = item.toLowerCase();
               const isActive = item === 'Presskit'
                 ? (activeSection === 'presskit' || activeSection === 'identidade')
@@ -568,7 +644,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 className="absolute top-full left-0 right-0 mt-4 bg-zinc-950/95 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 md:hidden flex flex-col gap-4 shadow-2xl"
               >
-                {['Biografia', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].map((item) => {
+                {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
                   const id = item.toLowerCase();
                   const targetId = item === 'Presskit' ? 'identidade' : id;
                   return (
@@ -737,8 +813,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* Biografia Section */}
-      <Section id="biografia" title="Biografia">
+      {/* Sobre Section */}
+      <Section id="sobre" title="Biografia">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -780,50 +856,51 @@ export default function App() {
         </div>
       </Section>
 
-      {/* Agenda Section is hidden
-      <Section id="agenda" title="Agenda" className="bg-zinc-900/30">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { date: '1/2 MAI', event: 'Sociedelic', city: 'São Paulo, SP', status: 'Ingressos' },
-            { date: '23 MAI', event: 'Isis Psy', city: 'São Paulo, SP', status: 'Ingressos' },
-            { date: '30/31 MAI', event: 'Sumatra', city: 'São Paulo, SP', status: 'Ingressos' },
-            { date: '7 JUL', event: 'Arraial Psicodelico', city: 'São Paulo, SP', status: 'Ingressos' },
-            { date: '5/6 SET', event: 'Farofa Trance', city: 'São Paulo, SP', status: 'Ingressos' },
-          ].map((gig, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="glass p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/10 transition-all group"
-            >
-              <div className="flex items-center gap-6">
-                <div className="text-2xl font-display font-black text-emerald-500 w-20">{gig.date}</div>
-                <div>
-                  <div className="text-xl font-bold group-hover:text-emerald-400 transition-colors">{gig.event}</div>
-                  <div className="text-zinc-500 text-sm uppercase tracking-widest">{gig.city}</div>
+      {/* Agenda Section */}
+      {showAgenda && (
+        <Section id="agenda" title="Agenda" className="bg-zinc-900/30">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { date: '1/2 MAI', event: 'Sociedelic', city: 'São Paulo, SP', status: 'Ingressos' },
+              { date: '23 MAI', event: 'Isis Psy', city: 'São Paulo, SP', status: 'Ingressos' },
+              { date: '30/31 MAI', event: 'Sumatra', city: 'São Paulo, SP', status: 'Ingressos' },
+              { date: '7 JUL', event: 'Arraial Psicodelico', city: 'São Paulo, SP', status: 'Ingressos' },
+              { date: '5/6 SET', event: 'Farofa Trance', city: 'São Paulo, SP', status: 'Ingressos' },
+            ].map((gig, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="glass p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/10 transition-all group"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="text-2xl font-display font-black text-emerald-500 w-20">{gig.date}</div>
+                  <div>
+                    <div className="text-xl font-bold group-hover:text-emerald-400 transition-colors">{gig.event}</div>
+                    <div className="text-zinc-500 text-sm uppercase tracking-widest">{gig.city}</div>
+                  </div>
                 </div>
-              </div>
-              {gig.status === 'Sold Out' ? (
-                <button disabled className="px-6 h-10 rounded-full text-xs font-bold uppercase tracking-wider bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center justify-center">
-                  Sold Out
-                </button>
-              ) : (
-                <a
-                  href={`https://wa.me/5519974230470?text=${encodeURIComponent(`Quero comprar ingresso da festa ${gig.event}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 h-10 rounded-full text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-emerald-500 transition-all flex items-center justify-center"
-                >
-                  {gig.status}
-                </a>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </Section>
-      */}
+                {gig.status === 'Sold Out' ? (
+                  <button disabled className="px-6 h-10 rounded-full text-xs font-bold uppercase tracking-wider bg-zinc-800 text-zinc-500 cursor-not-allowed flex items-center justify-center">
+                    Sold Out
+                  </button>
+                ) : (
+                  <a
+                    href={`https://wa.me/5519974230470?text=${encodeURIComponent(`Quero comprar ingresso da festa ${gig.event}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 h-10 rounded-full text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-emerald-500 transition-all flex items-center justify-center"
+                  >
+                    {gig.status}
+                  </a>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* Musicas Section */}
       <Section id="músicas" title="Músicas">
@@ -1034,7 +1111,7 @@ export default function App() {
             <p className="text-sm text-zinc-300 leading-relaxed">
               Com performances eletrizantes, presença marcante e uma identidade sonora que mistura potência e precisão, <span className="text-white font-semibold">CIBORG</span> transforma cada set em uma experiência marcante.
             </p>
-            <p className="text-sm text-zinc-400 leading-relaxed">
+            <p className="text-sm text-zinc-300 leading-relaxed">
               Sua musicalidade carrega uma energia envolvente, conduzindo o público por uma jornada totalmente dançante do começo ao fim. Entre graves pulsantes e atmosferas psicodélicas, cada apresentação entrega conexão, vibração e movimento constante na pista.
             </p>
             <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-emerald-500 pl-3">
@@ -1186,7 +1263,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          1.7 | Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span></a> 🎨
+          1.8 | Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span></a> 🎨
         </p>
       </footer>
     </div >
