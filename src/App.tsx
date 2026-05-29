@@ -16,9 +16,6 @@ import {
   Disc,
   Palette,
   Upload,
-  Sparkles,
-  Wand2,
-  Loader2,
   RefreshCw,
   Cpu,
   Cloud,
@@ -26,7 +23,6 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import { cn } from './lib/utils';
 import logoImg from '../midia/LOGO_CIBORG.png';
 import hiloImg from '../midia/LOGO_hilo.png';
@@ -47,432 +43,6 @@ import gallery8Img from '../midia/8.jpg';
 
 
 // --- Components ---
-
-// --- Components ---
-
-const AIVisualizer = () => {
-  const availablePhotos = [imageImg, aboutImg, image2Img];
-  const [photo, setPhoto] = useState<string>(availablePhotos[0]);
-  const [customPrompt, setCustomPrompt] = useState("");
-  const [creativityLevel, setCreativityLevel] = useState(50);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [generationsLeft, setGenerationsLeft] = useState<number>(7);
-
-  const getApiKey = () => {
-    return process.env.GEMINI_API_KEY || 
-           process.env.ciborg14 || 
-           import.meta.env.VITE_GEMINI_API_KEY || 
-           import.meta.env.VITE_CIBORG14 || 
-           "";
-  };
-
-  React.useEffect(() => {
-    const checkLimit = () => {
-      const today = new Date().toDateString();
-      const storedData = localStorage.getItem('imagine_limit');
-      
-      if (storedData) {
-        const { date, count } = JSON.parse(storedData);
-        if (date === today) {
-          setGenerationsLeft(Math.max(0, 7 - count));
-        } else {
-          localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: 0 }));
-          setGenerationsLeft(7);
-        }
-      } else {
-        localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: 0 }));
-        setGenerationsLeft(7);
-      }
-    };
-
-    checkLimit();
-  }, []);
-
-  const improvePrompt = async () => {
-    if (!customPrompt.trim()) {
-      setError("Digite algo no prompt para que eu possa melhorar.");
-      return;
-    }
-
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setError("Chave da API não encontrada. Por favor, configure a variável GEMINI_API_KEY no painel de Secrets (AI Studio) ou Environment Variables (Vercel).");
-      return;
-    }
-    setIsImprovingPrompt(true);
-    setError(null);
-
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Você é um especialista em engenharia de prompt para geração de imagens de IA. 
-        O usuário forneceu o seguinte prompt inicial para um flyer de DJ: "${customPrompt}"
-        
-        Sua tarefa é expandir e melhorar este prompt para torná-lo mais descritivo, visual e eficaz para uma IA de geração de imagem. 
-        Foque em detalhes de iluminação (neon, volumétrica), atmosfera (fumaça, partículas), estilo (cyberpunk, futurista, minimalista) e composição.
-        Mantenha o prompt em português. 
-        IMPORTANTE: Retorne APENAS o prompt melhorado, sem explicações ou introduções.`,
-      });
-
-      if (response.text) {
-        setCustomPrompt(response.text.trim());
-      }
-    } catch (err: any) {
-      console.error(err);
-      let msg = err.message || "Erro desconhecido";
-      try {
-        const firstBrace = msg.indexOf('{');
-        if (firstBrace !== -1) {
-          const parsed = JSON.parse(msg.substring(firstBrace));
-          if (parsed.error?.message) {
-            msg = parsed.error.message;
-          }
-        }
-      } catch (e) {}
-
-      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota") || msg.includes("Quota")) {
-        msg = "Limite de cota atingido (429). A cota gratuita para geração de imagens foi excedida. Verifique os detalhes de faturamento/plano de faturamento da sua chave de API no Google AI Studio, ou aguarde um momento antes de tentar novamente.";
-      } else if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) {
-        msg = "A chave da API foi bloqueada por segurança ou não tem permissões adequadas. Configure uma nova chave GEMINI_API_KEY nas variáveis do projeto.";
-      } else if (msg.includes("400") || msg.includes("INVALID_ARGUMENT") || msg.includes("expired")) {
-        msg = "A chave da API expirou ou os argumentos do modelo são inválidos. Gere uma nova chave no painel do Google AI Studio.";
-      }
-      setError(`Erro ao melhorar o prompt: ${msg}`);
-    } finally {
-      setIsImprovingPrompt(false);
-    }
-  };
-
-  const getBase64FromUrl = async (url: string): Promise<string> => {
-    try {
-      // Primeiro tenta conversão ultra confiável baseada em Canvas (não depende de rede/CORS local)
-      return await new Promise<string>((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) {
-              reject(new Error("Não foi possível carregar o canvas"));
-              return;
-            }
-            ctx.drawImage(img, 0, 0);
-            const dataUrl = canvas.toDataURL("image/png");
-            const base64String = dataUrl.split(',')[1];
-            resolve(base64String);
-          } catch (err) {
-            reject(err);
-          }
-        };
-        img.onerror = () => {
-          reject(new Error("Erro ao carregar elemento de imagem"));
-        };
-        img.src = url;
-      });
-    } catch (e) {
-      console.warn("Conversão via Canvas falhou, usando fallback de fetch: ", e);
-      // Fallback para o método tradicional com fetch
-      const response = await fetch(url);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = (reader.result as string).split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-  };
-
-  const generateVisual = async () => {
-    if (!photo) {
-      setError("Por favor, selecione uma foto primeiro.");
-      return;
-    }
-
-    if (generationsLeft <= 0) {
-      setError("Você atingiu o limite de 7 gerações por dia. Volte amanhã!");
-      return;
-    }
-
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setError("Chave da API não encontrada. Por favor, configure a variável GEMINI_API_KEY no painel de Secrets (AI Studio) ou Environment Variables (Vercel).");
-      return;
-    }
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const model = "gemini-2.5-flash-image";
-
-      const photoData = await getBase64FromUrl(photo);
-      
-      const creativityInstructions = creativityLevel < 30 
-        ? "Mantenha a composition extremamente fiel à foto original, alterando apenas sutilmente a iluminação para um ambiente de DJ."
-        : creativityLevel < 70
-        ? "Equilibre a fidelidade da foto com elementos criativos de iluminação, fumaça e atmosfera de festival."
-        : "Seja altamente criativo com o cenário, luzes e efeitos visuais, transformando o ambiente em algo épico e futurista, mas MANTENDO O ROSTO IDENTIFICÁVEL.";
-
-      const basePrompt = `Crie um flyer de alta qualidade para um DJ de música eletrônica. 
-      PRESERVAÇÃO DE IDENTIDADE ABSOLUTA: Você DEVE manter as características faciais EXATAS, a estrutura óssea e a identidade da pessoa na foto fornecida. O rosto na imagem gerada deve ser uma correspondência idêntica e fotorrealista de 1:1 com a imagem de origem. NÃO altere, embeleze ou estilize o rosto; ele deve ser perfeitamente reconhecível como a mesma pessoa real.
-      NÍVEL DE CRIATIVIDADE: ${creativityInstructions}
-      NÃO inclua nenhum logo ou marca d'água na imagem, foque apenas na foto do DJ e na ambientação.
-      IMPORTANTE: NÃO adicione nenhum texto, palavras, letras ou números na imagem (como nomes de eventos, datas, locais ou 'DJ'), a menos que seja explicitamente solicitado pelo usuário no prompt customizado. Foque exclusivamente na arte visual, luzes, cores e na composição artística.`;
-
-      const finalPrompt = customPrompt
-        ? `${basePrompt} Instruções adicionais do usuário: ${customPrompt}. LEMBRE-SE: A fidelidade do rosto é a prioridade máxima.`
-        : `${basePrompt} O estilo deve ser futurista, com luzes neon, fumaça e uma atmosfera de festival de música eletrônica épico. Mantenha o rosto idêntico.`;
-
-      const parts: any[] = [
-        { inlineData: { data: photoData, mimeType: "image/png" } },
-        { text: `A imagem fornecida é a foto do DJ.
-        
-        ${finalPrompt}` }
-      ];
-
-      // Timeout de segurança de 40 segundos para evitar processamento infinito
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("A requisição ao Gemini demorou muito para responder (timeout).")), 40000)
-      );
-
-      // Race a requisição com o timeout
-      const response = await Promise.race([
-        ai.models.generateContent({
-          model,
-          contents: {
-            parts: parts
-          }
-        }),
-        timeoutPromise
-      ]);
-
-      let imageFound = false;
-      let textResponse = "";
-
-      for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-          setGeneratedImage(`data:image/png;base64,${part.inlineData.data}`);
-          
-          // Update limit
-          const today = new Date().toDateString();
-          const storedData = localStorage.getItem('imagine_limit');
-          if (storedData) {
-            const { count } = JSON.parse(storedData);
-            const newCount = count + 1;
-            localStorage.setItem('imagine_limit', JSON.stringify({ date: today, count: newCount }));
-            setGenerationsLeft(Math.max(0, 7 - newCount));
-          }
-          imageFound = true;
-          break;
-        } else if (part.text) {
-          textResponse = part.text;
-        }
-      }
-
-      if (!imageFound) {
-        if (textResponse) {
-          throw new Error(`A API não conseguiu gerar uma nova imagem, mas retornou a seguinte mensagem: "${textResponse}"`);
-        } else {
-          throw new Error("A resposta da API do Gemini não conteve nenhuma imagem válida.");
-        }
-      }
-    } catch (err: any) {
-      console.error(err);
-      let msg = err.message || "Erro de conexão ou API";
-      try {
-        const firstBrace = msg.indexOf('{');
-        if (firstBrace !== -1) {
-          const parsed = JSON.parse(msg.substring(firstBrace));
-          if (parsed.error?.message) {
-            msg = parsed.error.message;
-          }
-        }
-      } catch (e) {}
-
-      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota") || msg.includes("Quota")) {
-        msg = "Limite de cota atingido (429). A cota para geração de imagens foi excedida. Verifique os detalhes de faturamento/plano de faturamento da sua chave de API e se há um cartão configurado no console do Google AI Studio, ou aguarde um momento antes de tentar novamente.";
-      } else if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) {
-        msg = "A chave da API foi bloqueada por segurança ou não tem permissões adequadas. Por favor, configure uma nova chave GEMINI_API_KEY.";
-      } else if (msg.includes("400") || msg.includes("INVALID_ARGUMENT") || msg.includes("expired")) {
-        msg = "A chave da API expirou ou os argumentos do modelo são inválidos. Gere uma nova chave no painel do Google AI Studio.";
-      }
-      setError(`Erro ao gerar imagem: ${msg}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-display font-bold">Configuração do Criativo</h3>
-            <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-full flex items-center gap-2">
-              <div className={cn("w-2 h-2 rounded-full", generationsLeft > 0 ? "bg-emerald-500" : "bg-red-500")} />
-              <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">
-                {generationsLeft} {generationsLeft === 1 ? 'restante' : 'restantes'} hoje
-              </span>
-            </div>
-          </div>
-          <p className="text-zinc-400 text-sm">Escolha uma das fotos e digite o que você imagina para o seu flyer.</p>
-
-          <div className="space-y-4">
-            <label className="text-xs uppercase tracking-widest text-zinc-500">Selecione sua Foto</label>
-            <div className="grid grid-cols-3 gap-4">
-              {availablePhotos.map((imgUrl, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setPhoto(imgUrl)}
-                  className={cn(
-                    "aspect-square rounded-2xl border-2 cursor-pointer transition-all overflow-hidden relative group",
-                    photo === imgUrl ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "border-white/10 hover:border-white/30"
-                  )}
-                >
-                  <img src={imgUrl} className="w-full h-full object-cover" alt={`Option ${idx + 1}`} referrerPolicy="no-referrer" />
-                  {photo === imgUrl && (
-                    <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                      <div className="bg-emerald-500 text-black rounded-full p-1">
-                        <Sparkles size={12} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4 glass-dark p-4 rounded-2xl border border-white/10">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs uppercase tracking-widest text-zinc-500">Nível de Criatividade</label>
-              <span className="text-emerald-500 font-mono text-sm font-bold">{creativityLevel}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={creativityLevel}
-              onChange={(e) => setCreativityLevel(parseInt(e.target.value))}
-              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-            />
-            <div className="flex justify-between text-[10px] uppercase tracking-tighter text-zinc-600 font-bold mt-1">
-              <span>Fiel à Imagem</span>
-              <span>Equilibrado</span>
-              <span>Criativo</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest text-zinc-500">Estilo / Prompt Customizado (Opcional)</label>
-            <textarea
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder="Ex: Estilo cyberpunk, cores roxas e laranjas, ambiente de floresta mágica..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors resize-none text-sm"
-              rows={3}
-            />
-          </div>
-
-          <div className="flex gap-2 sm:gap-4">
-            <button
-              onClick={improvePrompt}
-              disabled={isGenerating || isImprovingPrompt || !customPrompt.trim()}
-              className="flex-1 bg-white/5 border border-white/10 text-white h-14 rounded-xl font-bold uppercase tracking-wider text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Melhorar Prompt com IA"
-            >
-              {isImprovingPrompt ? <Loader2 className="animate-spin" size={14} /> : <Wand2 size={14} />}
-              {isImprovingPrompt ? "Melhorando..." : "Melhorar"}
-            </button>
-
-            <button
-              onClick={generateVisual}
-              disabled={isGenerating || isImprovingPrompt || !photo || generationsLeft <= 0}
-              className="flex-[2] bg-emerald-500 text-black h-14 rounded-xl font-bold uppercase tracking-wider text-xs sm:text-sm hover:bg-emerald-400 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
-              {isGenerating ? "Gerando..." : "Imaginar"}
-            </button>
-          </div>
-
-          {error && <p className="text-red-400 text-xs text-center">{error}</p>}
-        </div>
-
-        <div className="space-y-4">
-          <div className="relative aspect-[4/5] glass rounded-3xl overflow-hidden flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              {isGenerating ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-center space-y-4"
-                >
-                  <div className="relative">
-                    <div className="w-20 h-20 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mx-auto" />
-                    <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-emerald-500 animate-pulse" />
-                  </div>
-                  <p className="text-zinc-400 font-display uppercase tracking-[0.2em] text-xs">Processando Visual...</p>
-                </motion.div>
-              ) : generatedImage ? (
-                <motion.div
-                  key="result"
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-full h-full relative group"
-                >
-                  <img src={generatedImage} className="w-full h-full object-cover" alt="Generated Flyer" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <a
-                      href={generatedImage}
-                      download="dj-liquid-flyer.png"
-                      className="bg-white text-black px-6 h-12 rounded-full font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2"
-                    >
-                      <Download size={14} /> Salvar Imagem
-                    </a>
-                  </div>
-                </motion.div>
-              ) : (
-                <div className="text-center p-8">
-                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ImageIcon className="text-zinc-600" size={32} />
-                  </div>
-                  <p className="text-zinc-500 text-sm">O flyer gerado aparecerá aqui.</p>
-                </div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {generatedImage && !isGenerating && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <a
-                href={generatedImage}
-                download="dj-ciborg-flyer.png"
-                className="w-full bg-emerald-500 text-black h-14 rounded-xl font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
-              >
-                <Download size={18} /> Baixar Flyer Gerado
-              </a>
-            </motion.div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Section = ({ id, title, children, className }: { id: string, title: string, children: React.ReactNode, className?: string }) => (
   <section id={id} className={cn("py-24 px-6 relative", className)}>
@@ -518,7 +88,7 @@ export default function App() {
   const showAgenda = false;
 
   React.useEffect(() => {
-    const sections = ['sobre', 'agenda', 'músicas', 'sets', 'galeria', 'imagine', 'identidade', 'presskit', 'contato'].filter(
+    const sections = ['sobre', 'agenda', 'músicas', 'sets', 'galeria', 'identidade', 'presskit', 'contato'].filter(
       id => id !== 'agenda' || showAgenda
     );
     const observers: IntersectionObserver[] = [];
@@ -581,7 +151,7 @@ export default function App() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 text-sm font-medium text-zinc-400 relative">
-            {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
+            {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
               const id = item.toLowerCase();
               const isActive = item === 'Presskit'
                 ? (activeSection === 'presskit' || activeSection === 'identidade')
@@ -644,7 +214,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 className="absolute top-full left-0 right-0 mt-4 bg-zinc-950/95 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 md:hidden flex flex-col gap-4 shadow-2xl"
               >
-                {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Imagine', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
+                {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
                   const id = item.toLowerCase();
                   const targetId = item === 'Presskit' ? 'identidade' : id;
                   return (
@@ -788,8 +358,8 @@ export default function App() {
             <a href="#músicas" className="bg-white text-black px-4 sm:px-8 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm">
               <Play size={14} fill="currentColor" /> Ouvir Agora
             </a>
-            <a href="#imagine" onClick={(e) => { e.preventDefault(); scrollToSection('imagine'); }} className="glass px-6 sm:px-8 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-white/10 transition-all flex items-center justify-center text-[10px] sm:text-xs md:text-sm">
-              Imagine
+            <a href="#contato" onClick={(e) => { e.preventDefault(); scrollToSection('contato'); }} className="glass px-6 sm:px-8 h-14 rounded-full font-bold uppercase tracking-wider hover:bg-white/10 transition-all flex items-center justify-center text-[10px] sm:text-xs md:text-sm">
+              Contato
             </a>
           </motion.div>
         </motion.div>
@@ -1052,11 +622,6 @@ export default function App() {
             </motion.div>
           ))}
         </div>
-      </Section>
-
-      {/* AI Visualizer Section */}
-      <Section id="imagine" title="Imagine">
-        <AIVisualizer />
       </Section>
 
       {/* Identidade Visual Section */}
