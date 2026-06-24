@@ -151,12 +151,14 @@ export default function App() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 text-sm font-medium text-zinc-400 relative">
-            {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
+            {['Biografia', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
               const id = item.toLowerCase();
               const isActive = item === 'Presskit'
                 ? (activeSection === 'presskit' || activeSection === 'identidade')
+                : item === 'Biografia'
+                ? activeSection === 'sobre'
                 : activeSection === id;
-              const targetId = item === 'Presskit' ? 'identidade' : id;
+              const targetId = item === 'Presskit' ? 'identidade' : item === 'Biografia' ? 'sobre' : id;
               return (
                 <a
                   key={item}
@@ -214,9 +216,9 @@ export default function App() {
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 className="absolute top-full left-0 right-0 mt-4 bg-zinc-950/95 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 md:hidden flex flex-col gap-4 shadow-2xl"
               >
-                {['Sobre', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
+                {['Biografia', 'Agenda', 'Músicas', 'Sets', 'Galeria', 'Presskit'].filter(item => item !== 'Agenda' || showAgenda).map((item) => {
                   const id = item.toLowerCase();
-                  const targetId = item === 'Presskit' ? 'identidade' : id;
+                  const targetId = item === 'Presskit' ? 'identidade' : item === 'Biografia' ? 'sobre' : id;
                   return (
                     <a
                       key={item}
@@ -405,20 +407,31 @@ export default function App() {
               <div className="text-xs uppercase tracking-widest text-white">Anos de Estrada</div>
             </div>
           </motion.div>
-          <div className="space-y-6">
-            <p className="text-xl text-zinc-300 leading-relaxed font-light">
-              Com uma carreira forjada nas pistas mais vibrantes do país, <span className="text-white font-medium">Ciborg</span> traz uma fusão única de sonoridades etéreas e grooves profundos.
-            </p>
-            <p className="text-zinc-400 leading-relaxed">
-              Sua jornada começou nos clubes underground de São Paulo, onde desenvolveu uma sensibilidade aguçada para a leitura de pista. Hoje, suas produções são reconhecidas pela complexidade rítmica e atmosferas envolventes que transportam o público para uma jornada sensorial completa.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
-              <GlassCard className="p-4">
-                <div className="text-blue-500 mb-2"><Music size={24} /></div>
+          <div className="flex flex-col gap-6">
+            <div className="order-2 md:order-1 space-y-6">
+              <p className="text-xl text-zinc-300 leading-relaxed font-light">
+                Com uma carreira forjada nas pistas mais vibrantes do país, <span className="text-white font-medium">Ciborg</span> traz uma fusão única de sonoridades etéreas e grooves profundos.
+              </p>
+              <p className="text-zinc-400 leading-relaxed">
+                CIBORG é o projeto de Progressive Trance criado por Everton Araújo em outubro de 2018, destacando-se por apresentações de alta energia, forte presença de palco e uma identidade sonora marcante.
+              </p>
+              <p className="text-zinc-400 leading-relaxed">
+                Com sets envolventes e totalmente dançantes do começo ao fim, CIBORG entrega uma experiência sonora que mistura grooves inovadores e atmosferas psicodélicas, proporcionando conexão e impacto na pista em cada apresentação.
+              </p>
+              <p className="text-zinc-400 leading-relaxed">
+                Ao longo de sua trajetória, o projeto já dividiu palco com importantes nomes da cena trance nacional, como Aura Vortex, Becker, Menumas, Zanon e Blazy.
+              </p>
+              <p className="text-zinc-400 leading-relaxed">
+                O nome CIBORG carrega uma forte essência de superação e autenticidade, inspirado em uma deficiência parcial em uma das pernas. Transformando desafios em força e expressão artística, Everton Araújo leva para o palco não apenas música, mas também paixão, energia e verdade em cada performance.
+              </p>
+            </div>
+            <div className="order-1 md:order-2 grid grid-cols-2 gap-4 md:pt-6">
+              <GlassCard className="p-4 flex items-center justify-center gap-2">
+                <div className="text-blue-500"><Music size={24} /></div>
                 <div className="text-sm font-bold uppercase tracking-tighter">Prog Trance</div>
               </GlassCard>
-              <GlassCard className="p-4">
-                <div className="text-purple-500 mb-2"><Cpu size={24} /></div>
+              <GlassCard className="p-4 flex items-center justify-center gap-2">
+                <div className="text-purple-500"><Cpu size={24} /></div>
                 <div className="text-sm font-bold uppercase tracking-tighter">Produtor</div>
               </GlassCard>
             </div>
@@ -625,22 +638,18 @@ export default function App() {
       </Section>
 
       {/* Identidade Visual Section */}
-      <Section id="identidade" title="Identidade Visual" className="bg-zinc-900/30">
+      <Section id="identidade" title="Presskit" className="bg-zinc-900/30">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Logo & Agência — card 1 */}
+          {/* Logo — card 1 */}
           <GlassCard className="space-y-4">
             <div className="flex items-center gap-4 mb-2">
               <Disc className="text-blue-500" />
-              <h3 className="text-xl font-bold">Logo, Agência & Foto</h3>
+              <h3 className="text-xl font-bold">Logo & Foto</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="p-6 glass-dark rounded-2xl flex flex-col items-center justify-center gap-3">
                 <div className="text-xs uppercase tracking-widest text-zinc-500">Logo</div>
                 <img src={logoImg} alt="Ciborg Logo" className="h-16 object-contain" />
-              </div>
-              <div className="p-6 glass-dark rounded-2xl flex flex-col items-center justify-center gap-3">
-                <div className="text-xs uppercase tracking-widest text-zinc-500">Agência</div>
-                <img src={hiloImg} alt="Hilo Agency Logo" className="h-16 object-contain" />
               </div>
             </div>
           </GlassCard>
@@ -693,9 +702,6 @@ export default function App() {
           <GlassCard className="py-16 px-8 border-emerald-500/20">
             <Download size={48} className="mx-auto text-emerald-500 mb-6 animate-bounce" />
             <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">DOWNLOAD PRESS KIT</h2>
-            <p className="text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed text-sm">
-              <span className="text-white font-semibold">Ciborg</span> é um projeto criado por Everton Araújo em outubro de 2018, tendo como foco a modalidade progressive trance. Músicas extremamente envolventes, com groove inovador, dando muita energia e emoção ao escutá-las. Ciborg já dividiu palco com grandes artistas da cena trance como Aura Vortex, Becker, Menumas, Zanon, Blazzy, entre outros. O nome Ciborg veio devido a uma deficiência parcial em uma das pernas, e junto com a sua vontade e força de dançar em cada apresentação ele vem com todo seu amor pela música!
-            </p>
             <div className="flex flex-col md:flex-row gap-4 justify-center">
               <a
                 href="https://drive.google.com/drive/folders/183J5Zom7Y2UeS4GCPvzrzxW0wxhRYPMb?usp=sharing"
@@ -761,7 +767,7 @@ export default function App() {
                       <path mask="url(#fb-mask)" d="M1365.333 682.667C1365.333 305.64 1059.693 0 682.667 0 305.64 0 0 305.64 0 682.667c0 340.738 249.641 623.16 576 674.373V880H402.667V682.667H576v-150.4c0-171.094 101.917-265.6 257.853-265.6 74.69 0 152.814 13.333 152.814 13.333v168h-86.083c-84.804 0-111.25 52.623-111.25 106.61v128.057h189.333L948.4 880H789.333v477.04c326.359-51.213 576-333.635 576-674.373" />
                     </svg>
                   ),
-                  href: 'https://www.facebook.com/ciborgmusic',
+                  href: 'https://www.facebook.com/ciborgmusic?mibextid=LQQJ4d',
                   color: 'text-blue-500 hover:text-blue-400'
                 },
                 {
@@ -780,47 +786,59 @@ export default function App() {
               ))}
             </div>
           </div>
-          <GlassCard>
-            <form className="space-y-4" onSubmit={handleFormSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-zinc-500">Nome</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+          <div className="flex flex-col gap-6">
+            <GlassCard>
+              <form className="space-y-4" onSubmit={handleFormSubmit}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest text-zinc-500">Nome</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest text-zinc-500">Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-zinc-500">Email</label>
-                  <input
-                    type="email"
+                  <label className="text-xs uppercase tracking-widest text-zinc-500">Mensagem</label>
+                  <textarea
+                    rows={4}
                     required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
+                  ></textarea>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest text-zinc-500">Mensagem</label>
-                <textarea
-                  rows={4}
-                  required
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-                ></textarea>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-emerald-500 transition-all"
-              >
-                Enviar Mensagem
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-emerald-500 transition-all"
+                >
+                  Enviar Mensagem
+                </button>
+              </form>
+            </GlassCard>
+          </div>
+        </div>
+        <div className="mt-12 grid grid-cols-2 md:flex md:justify-center gap-4">
+          <GlassCard className="p-4 md:w-64 flex items-center justify-center gap-2">
+            <div className="text-blue-500"><Music size={24} /></div>
+            <div className="text-sm font-bold uppercase tracking-tighter">Prog Trance</div>
+          </GlassCard>
+          <GlassCard className="p-4 md:w-64 flex items-center justify-center gap-2">
+            <div className="text-purple-500"><Cpu size={24} /></div>
+            <div className="text-sm font-bold uppercase tracking-tighter">Produtor</div>
           </GlassCard>
         </div>
       </Section>
@@ -828,7 +846,7 @@ export default function App() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-zinc-600 text-lg flex items-center justify-center gap-1">
-          1.8 | Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span></a> 🎨
+          1.9 | Desenvolvido por <a href="https://www.instagram.com/markbeys/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity"><span className="animate-marks italic">Marks</span><span className="animate-beys italic">Beys</span></a> 🎨
         </p>
       </footer>
     </div >
